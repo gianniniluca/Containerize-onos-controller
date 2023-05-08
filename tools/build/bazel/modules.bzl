@@ -160,6 +160,7 @@ DRIVER_MAP = {
     "//drivers/p4runtime:onos-drivers-p4runtime-oar": ["stratum", "sdfabric"],
     "//drivers/polatis/netconf:onos-drivers-polatis-netconf-oar": [],
     "//drivers/polatis/openflow:onos-drivers-polatis-openflow-oar": [],
+    "//drivers/quantum:onos-drivers-quantum-oar": [],
     "//drivers/server:onos-drivers-server-oar": [],
     "//drivers/stratum:onos-drivers-stratum-oar": ["stratum", "sdfabric"],
     "//drivers/stratum-odtn:onos-drivers-stratum-odtn-oar": [],

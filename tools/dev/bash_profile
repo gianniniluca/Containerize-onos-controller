@@ -3,7 +3,7 @@
 # Simply include in your own .bash_aliases or .bash_profile
 
 # Root of the ONOS source tree
-export ONOS_ROOT=${ONOS_ROOT:-~/onos}
+export ONOS_ROOT=/home/alessio/onos-quancom/
 
 # This is a hack to remove symlinks from the ONOS_ROOT path. To be removed when
 # the protobuf buck rules can handle symlinks
@@ -11,7 +11,7 @@ ONOS_ROOT=$(pushd $ONOS_ROOT >/dev/null && pwd -P && popd >/dev/null)
 
 # Rely on developer preference for automatically ignited apps
 # Default to drivers and gui2
-export ONOS_APPS=${ONOS_APPS:-drivers,openflow,gui2}
+export ONOS_APPS=drivers,openflow,gui2,netcfglinksprovider,drivers.odtn-driver,optical-rest
 
 export MAVEN=${MAVEN:-~/Applications/apache-maven-3.3.9}
 
