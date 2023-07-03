@@ -12,6 +12,7 @@ import java.util.stream.IntStream;
 public class QuantumLambdaQuery extends AbstractHandlerBehaviour implements LambdaQuery {
 
     //Assumes a lambda range in the form N-M where N and M are integer numbers
+    //Returns M-N channels starting from index N
     @Override
     public Set<OchSignal> queryLambdas(PortNumber portNumber) {
         DeviceService deviceService = this.handler().get(DeviceService.class);
@@ -27,8 +28,8 @@ public class QuantumLambdaQuery extends AbstractHandlerBehaviour implements Lamb
         int lambdaCount = maxLambda - minLambda;
         int slotGranularity = 4;
 
-        return IntStream.range(0, lambdaCount)
-                .mapToObj(x -> new OchSignal(GridType.DWDM, channelSpacing, x - (lambdaCount / 2), slotGranularity))
+        return IntStream.range(0, lambdaCount + 1)
+                .mapToObj(x -> new OchSignal(GridType.DWDM, channelSpacing, x + minLambda, slotGranularity))
                 .collect(ImmutableSet.toImmutableSet());
     }
 }

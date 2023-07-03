@@ -28,7 +28,7 @@ public interface Device extends Element {
     enum Type {
         SWITCH, ROUTER, ROADM, OTN, ROADM_OTN, FIREWALL, BALANCER, IPS, IDS, CONTROLLER,
         VIRTUAL, FIBER_SWITCH, MICROWAVE, OLT, ONU, OPTICAL_AMPLIFIER, OLS, TERMINAL_DEVICE,
-        OTHER, SERVER
+        OTHER, SERVER, QKD
     }
 
     /**

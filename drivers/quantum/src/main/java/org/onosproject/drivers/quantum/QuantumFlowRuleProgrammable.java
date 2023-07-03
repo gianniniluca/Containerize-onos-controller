@@ -20,7 +20,7 @@ public class QuantumFlowRuleProgrammable
     private static final Logger log =
             LoggerFactory.getLogger(QuantumFlowRuleProgrammable.class);
 
-    private Map<String, FlowRule> flowCache = new HashMap<>();
+    private static final Map<String, FlowRule> flowCache = new HashMap<>();
 
     /**
      * Apply the flow entries specified in the collection rules.
@@ -31,12 +31,16 @@ public class QuantumFlowRuleProgrammable
     @Override
     public Collection<FlowRule> applyFlowRules(Collection<FlowRule> rules) {
 
+        log.info("QKD applyFlowRules cache size {}", flowCache.size());
+
         for (FlowRule flowRule : rules) {
             log.info("OpenConfig added flowrule {}", flowRule);
             flowCache.put(flowKey(flowRule), flowRule);
         }
         //Print out number of rules sent to the device (without receiving errors)
         log.info("QKD applyFlowRules added {}", rules.size());
+        log.info("QKD applyFlowRules cache size {}", flowCache.size());
+
         return rules;
     }
 
@@ -48,7 +52,10 @@ public class QuantumFlowRuleProgrammable
     @Override
     public Collection<FlowEntry> getFlowEntries() {
 
+        log.info("QKD getFlowEntries cache size {}", flowCache.size());
+
         Collection<FlowEntry> fetched = flowCache.values().stream()
+                .filter(fr -> fr.deviceId().equals(did()))
                 .map(fr -> new DefaultFlowEntry(fr, FlowEntry.FlowEntryState.ADDED, 0, 0, 0))
                 .collect(Collectors.toList());
 
@@ -66,6 +73,9 @@ public class QuantumFlowRuleProgrammable
      */
     @Override
     public Collection<FlowRule> removeFlowRules(Collection<FlowRule> rules) {
+
+        log.info("QKD removeFlowRules cache size {}", flowCache.size());
+
         List<FlowRule> removed = new ArrayList<>();
         for (FlowRule flowRule : rules) {
             try {
@@ -78,6 +88,7 @@ public class QuantumFlowRuleProgrammable
 
         //Print out number of removed rules from the device (without receiving errors)
         log.info("QKD removeFlowRules removed {}", removed.size());
+        log.info("QKD removeFlowRules cache size {}", flowCache.size());
 
         return removed;
     }
@@ -100,7 +111,8 @@ public class QuantumFlowRuleProgrammable
     }
 
     private String flowKey(FlowRule rule) {
-        String key = String.valueOf(rule.selector().hashCode() + rule.treatment().hashCode());
+        String key = String.valueOf(did().hashCode() + rule.selector().hashCode() + rule.treatment().hashCode());
+        log.info("QKD flowKey generated {}", key);
 
         return key;
     }
