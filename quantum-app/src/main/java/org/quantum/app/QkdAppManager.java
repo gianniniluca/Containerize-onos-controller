@@ -21,22 +21,48 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Skeletal ONOS application component.
  */
-@Component(immediate = true)
+@Component(immediate = true, service = QkdAppManager.class)
 public class QkdAppManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
+    //Used key is the SAE_ID
+    private static final Map<String, QkdApp> qkdAppDatabase = new HashMap<>();
+
     @Activate
     protected void activate() {
-        log.info("Started");
+        log.info("STARTED QkdLApp Manager appId");
     }
 
     @Deactivate
     protected void deactivate() {
-        log.info("Stopped");
+        log.info("STOPPED QkdLApp Manager appId");
     }
 
+    public void addQkdApp(String key, QkdApp value) {
+        qkdAppDatabase.put(key, value);
+    }
+
+    public void removeQkdApp(String key) {
+        qkdAppDatabase.remove(key);
+    }
+
+    public QkdApp getQkdApp(String key) {
+        return qkdAppDatabase.get(key);
+    }
+
+    public Collection<QkdApp> getQkdApps() {
+        return qkdAppDatabase.values();
+    }
+
+    public int getDatabaseSize() {
+        return qkdAppDatabase.size();
+    }
 }

@@ -19,6 +19,9 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+/**
+ * Quantum Apps Management web resource.
+ */
 @Path("QkdApps")
 public class QkdAppWebResource extends AbstractWebResource {
 
@@ -27,7 +30,7 @@ public class QkdAppWebResource extends AbstractWebResource {
     IntentService intentService = get(IntentService.class);
     DeviceService deviceService = get(DeviceService.class);
     CoreService coreService = get(CoreService.class);
-    QkdLinkManager manager = get(QkdLinkManager.class);
+    QkdAppManager manager = get(QkdAppManager.class);
 
     /**
      * Get hello world greeting.
@@ -42,21 +45,56 @@ public class QkdAppWebResource extends AbstractWebResource {
 
         ArrayNode links = mapper().createArrayNode();
 
-        for (QkdLink link : manager.getQkdLinks()) {
+        for (QkdApp app : manager.getQkdApps()) {
             ObjectNode node = mapper().createObjectNode()
-                    .put("id", link.id)
-                    .put("src", link.src.toString())
-                    .put("dst", link.dst.toString())
-                    .put("signal", link.signal.spacingMultiplier())
-                    .put("attenuation", link.attenuation)
-                    .put("key", link.key)
-                    .put("intent-id", link.intent.id().toString());
+                    .put("sae_id", app.saeId)
+                    .put("location", app.location.id().toString());
 
             links.add(node);
         }
 
-        ObjectNode root = this.mapper().createObjectNode().putPOJO("QkdLinks", links);
+        ObjectNode root = this.mapper().createObjectNode().putPOJO("QkdApps", links);
         return ok(root).build();
+    }
+
+    /**
+     * Explicit app registration.
+     *
+     * @param appAddress
+     * @param appLocation
+     * @return
+     */
+    @POST
+    @Path("")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response implicitRegistration(@QueryParam("appAddress") String appAddress,
+                                   @QueryParam("appLocation") String appLocation) {
+
+        return Response.ok()
+                .header("SAE_ID", 22)
+                .build();
+    }
+
+    /**
+     * Open Key Session.
+     * Implicit app registration.
+     *
+     * @param appAddress
+     * @param appLocation
+     * @return
+     */
+    @POST
+    @Path("")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response openKeySession(@QueryParam("appAddress") String appAddress,
+                                   @QueryParam("appLocation") String appLocation) {
+
+        return Response.ok()
+                .header("SAE_ID", 22)
+                .header("APP_ID", 44)
+                .build();
     }
 }
 
