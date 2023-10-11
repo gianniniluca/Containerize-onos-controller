@@ -20,6 +20,8 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.onosproject.ui.GlyphConstants.CHAIN;
+import static org.onosproject.ui.GlyphConstants.LOCK;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class QuantumDeviceDiscovery extends AbstractHandlerBehaviour
@@ -63,7 +65,9 @@ public class QuantumDeviceDiscovery extends AbstractHandlerBehaviour
             throw new IllegalStateException(new NetconfException("Failed to retrieve session.", e));
         }
 
-        DefaultAnnotations annotations = DefaultAnnotations.builder().build();
+        DefaultAnnotations annotations = DefaultAnnotations.builder()
+                .set(AnnotationKeys.UI_TYPE, CHAIN)
+                .build();
 
         DefaultDeviceDescription description = new DefaultDeviceDescription(
                 did().uri(),

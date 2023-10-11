@@ -1,41 +1,42 @@
 package org.quantum.app;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.onlab.util.Frequency;
-import org.onosproject.codec.CodecContext;
-import org.onosproject.codec.JsonCodec;
 import org.onosproject.net.ConnectPoint;
-
-import org.onosproject.net.Link;
 import org.onosproject.net.OchSignal;
+import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.intent.Intent;
-import org.onosproject.net.intent.IntentId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.onosproject.cli.AbstractShellCommand.get;
 
 public class QkdLink {
     private final Logger log = LoggerFactory.getLogger(getClass());
-    protected int id;
+
+    protected String key;
     protected ConnectPoint src;
     protected ConnectPoint dst;
-    protected OchSignal signal;
     protected double attenuation;
-    protected String key;
     protected Intent intent;
 
-    public QkdLink(int index, ConnectPoint srcCP, ConnectPoint dstCP, OchSignal s, double att, Intent in) {
-        //Requires that id is a positive integer less < 10000, four digits
-        String prefix = "12345678-abcd-abcd-abcd-00000000";
+    protected enum LinkStatus {ACTIVE, PASSIVE, PENDING, OFF}
+    protected LinkStatus linkStatus;
 
-        key = prefix + String.format("%04d", index);
+    public QkdLink(ConnectPoint srcCP, ConnectPoint dstCP, double att, Intent in) {
+        DeviceService deviceService = get(DeviceService.class);
 
-        id = index;
+        log.info("serial source {}", deviceService.getDevice(srcCP.deviceId()).serialNumber());
+        log.info("serial destination {}", deviceService.getDevice(dstCP.deviceId()).serialNumber());
+
+        String source = deviceService.getDevice(srcCP.deviceId()).serialNumber().split("-")[3];
+        String destination = deviceService.getDevice(dstCP.deviceId()).serialNumber().split("-")[3];
+
+        key = "bbbbbbbb-" + source + "-bbbb-" + destination + "-bbbbbbbbbbbb";
+
         src = srcCP;
         dst = dstCP;
-        signal = s;
         attenuation = att;
         intent = in;
+
+        linkStatus = LinkStatus.OFF;
     }
 }

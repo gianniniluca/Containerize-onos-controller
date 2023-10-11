@@ -14,21 +14,7 @@
  * limitations under the License.
  */
 
-package org.quantum.app;
-
-import org.onlab.rest.AbstractWebApplication;
-
-import java.util.Set;
-
 /**
- * Sample REST API web application.
+ * ONOS application archetype.
  */
-public class AppWebApplication extends AbstractWebApplication {
-    @Override
-    public Set<Class<?>> getClasses() {
-        return getClasses(
-                QkdAppWebResource.class,
-                QkdLinkWebResource.class,
-                QkdKeySessionWebResource.class);
-    }
-}
+package org.quantum.app;

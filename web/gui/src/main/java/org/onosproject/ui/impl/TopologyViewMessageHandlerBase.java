@@ -444,8 +444,10 @@ public abstract class TopologyViewMessageHandlerBase extends TopoologyTrafficMes
     private String lookupGlyph(Device device) {
         String uiType = device.annotations().value(UI_TYPE);
         if (uiType != null && !uiType.equalsIgnoreCase("undefined")) {
+            log.info("DEVICE {} returned Glyph from annotation name {}", device.id().toString(), uiType);
             return uiType;
         } else {
+            log.info("DEVICE {} returned Glyph from library name {}", device.id().toString(), DEVICE_GLYPHS.get(device.type()));
             return DEVICE_GLYPHS.get(device.type());
         }
     }

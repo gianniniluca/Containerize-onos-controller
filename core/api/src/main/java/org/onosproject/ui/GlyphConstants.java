@@ -39,6 +39,8 @@ public final class GlyphConstants {
     public static final String OTN = "otn";
     public static final String ROADM_OTN = "roadm_otn";
     public static final String FIBER_SWITCH = "fiber_switch";
+    public static final String TERMINAL_DEVICE = "m_otn";
+
     public static final String MICROWAVE = "microwave";
 
     public static final String ENDSTATION = "m_endstation";

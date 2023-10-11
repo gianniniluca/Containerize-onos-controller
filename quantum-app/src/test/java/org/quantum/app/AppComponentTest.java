@@ -13,22 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.quantum.app;
 
-import org.onlab.rest.AbstractWebApplication;
-
-import java.util.Set;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.onosproject.cfg.ComponentConfigAdapter;
 
 /**
- * Sample REST API web application.
+ * Set of tests of the ONOS application component.
  */
-public class AppWebApplication extends AbstractWebApplication {
-    @Override
-    public Set<Class<?>> getClasses() {
-        return getClasses(
-                QkdAppWebResource.class,
-                QkdLinkWebResource.class,
-                QkdKeySessionWebResource.class);
+public class AppComponentTest {
+
+    private AppComponent component;
+
+    @Before
+    public void setUp() {
+        component = new AppComponent();
+        component.cfgService = new ComponentConfigAdapter();
+        component.activate();
     }
+
+    @After
+    public void tearDown() {
+        component.deactivate();
+    }
+
+    @Test
+    public void basics() {
+
+    }
+
 }

@@ -6,20 +6,27 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.drivers.utilities.XmlConfigParser;
 import org.onosproject.net.DeviceId;
+import org.onosproject.net.OchSignal;
 import org.onosproject.net.device.DeviceService;
+import org.onosproject.net.intent.IntentService;
+import org.onosproject.net.intent.IntentState;
 import org.onosproject.netconf.*;
 import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
+/**
+ * Skeletal ONOS application component.
+ */
 @Component(immediate = true, service = QkdLinkManager.class)
 public class QkdLinkManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+
     private ApplicationId appId;
     private static final Map<String, QkdLink> qkdLinkDatabase = new HashMap<>();
     private static final String RPC_TAG_NETCONF_BASE = "<rpc xmlns=\"urn:ietf:params:xml:ns:netconf:base:1.0\">";
@@ -33,19 +40,23 @@ public class QkdLinkManager {
     protected DeviceService deviceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
-    protected CoreService coreService;
+    protected IntentService intentService;
 
     @Activate
     protected void activate() {
-
-        appId = coreService.registerApplication("org.quantum.app");
-
-        log.info("STARTED QkdLink Manager appId {}", appId);
+        log.info("STARTED QkdLink Manager appId");
     }
 
     @Deactivate
     protected void deactivate() {
-        log.info("STOPPED QkdLink Manager");
+
+        for (QkdLink link : getQkdLinks()) {
+            if (intentService.getIntentState(link.intent.key()) == IntentState.INSTALLED) {
+                intentService.withdraw(link.intent);
+            }
+        }
+
+        log.info("STOPPED QkdLink Manager appId");
     }
 
     public void addQkdLink(String key, QkdLink value) {
@@ -85,22 +96,138 @@ public class QkdLinkManager {
     }
 
 
-    public boolean configureQkdLinks(String key) {
-        QkdLink link = getQkdLink(key);
+    public boolean createQkdLink(QkdLink link) {
 
-        NetconfSession session = getNetconfSession(link.src.deviceId());
+        NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
 
         try {
-            log.info("REQUEST sent to src: {}", setLinkFilterDestination(link));
-            boolean replySrc = session.editConfig(DatastoreId.RUNNING, null, setLinkFilterSource(link));
-            boolean replyDst = session.editConfig(DatastoreId.RUNNING, null, setLinkFilterSource(link));
+            log.info("REQUEST sent to src QKD node: {}", createLinkFilterSource(link));
+            boolean replySrc = sessionSrc.editConfig(DatastoreId.RUNNING, null, createLinkFilterSource(link));
 
             log.info("REPLY to DeviceConfiguration src: {}", replySrc);
+
+        } catch (Exception e) {
+            log.error("configureQkdLinks - Failed configuring source QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring source QKD node.", e));
+        }
+
+        NetconfSession sessionDst = getNetconfSession(link.dst.deviceId());
+
+        try {
+            log.info("REQUEST sent to dst QKD node: {}", createLinkFilterDestination(link));
+            boolean replyDst = sessionDst.editConfig(DatastoreId.RUNNING, null, createLinkFilterDestination(link));
+
             log.info("REPLY to DeviceConfiguration dst: {}", replyDst);
 
         } catch (Exception e) {
-            log.error("configureQkdLinks - Failed to retrieve session {}", link.src.deviceId());
-            throw new IllegalStateException(new NetconfException("Failed to retrieve session.", e));
+            log.error("configureQkdLinks - Failed configuring destination QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring destination QKD node.", e));
+        }
+
+        //Confirm the link status
+        link.linkStatus = QkdLink.LinkStatus.OFF;
+
+        return true;
+    }
+
+    public boolean activateQkdLink(String key, OchSignal signal) {
+        QkdLink link = getQkdLink(key);
+
+        NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
+
+        try {
+            log.info("REQUEST sent to src QKD node: {}", activateLinkFilter(link, signal));
+            boolean replySrc = sessionSrc.editConfig(DatastoreId.RUNNING, null, activateLinkFilter(link, signal));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replySrc);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring source QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring source QKD node.", e));
+        }
+
+        NetconfSession sessionDst = getNetconfSession(link.dst.deviceId());
+
+        try {
+            log.info("REQUEST sent to dst QKD node: {}", activateLinkFilter(link, signal));
+            boolean replyDst = sessionDst.editConfig(DatastoreId.RUNNING, null, activateLinkFilter(link, signal));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replyDst);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring destination QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring destination QKD node.", e));
+        }
+
+        //Change the link status
+        link.linkStatus = QkdLink.LinkStatus.ACTIVE;
+
+        return true;
+    }
+
+    public boolean deactivateQkdLink(String key) {
+        QkdLink link = getQkdLink(key);
+
+        NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
+
+        try {
+            log.info("REQUEST sent to src QKD node: {}", deactivateLinkFilter(link));
+            boolean replySrc = sessionSrc.editConfig(DatastoreId.RUNNING, null, deactivateLinkFilter(link));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replySrc);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring source QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring source QKD node.", e));
+        }
+
+        NetconfSession sessionDst = getNetconfSession(link.dst.deviceId());
+
+        try {
+            log.info("REQUEST sent to dst QKD node: {}", deactivateLinkFilter(link));
+            boolean replyDst = sessionDst.editConfig(DatastoreId.RUNNING, null, deactivateLinkFilter(link));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replyDst);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring destination QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring destination QKD node.", e));
+        }
+
+        //Change the link status
+        //TODO consider link to PASSIVE
+        link.linkStatus = QkdLink.LinkStatus.OFF;
+
+        return true;
+    }
+
+    public boolean deleteQkdLink(String key) {
+        QkdLink link = getQkdLink(key);
+
+        NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
+
+        try {
+            log.info("REQUEST sent to src QKD node: {}", deleteLinkFilter(key));
+            boolean replySrc = sessionSrc.editConfig(DatastoreId.RUNNING, null, deleteLinkFilter(key));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replySrc);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring source QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring source QKD node.", e));
+        }
+
+        NetconfSession sessionDst = getNetconfSession(link.dst.deviceId());
+
+        try {
+            log.info("REQUEST sent to dst QKD node: {}", deleteLinkFilter(key));
+            boolean replyDst = sessionDst.editConfig(DatastoreId.RUNNING, null, deleteLinkFilter(key));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replyDst);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring destination QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring destination QKD node.", e));
         }
 
         return true;
@@ -132,7 +259,50 @@ public class QkdLinkManager {
         return lambda;
     }
 
-    private String setLinkFilterSource(QkdLink link) {
+    private String deleteLinkFilter(String key) {
+        StringBuilder filter = new StringBuilder();
+        filter.append("<qkd_node xmlns=\"urn:etsi:qkd:yang:etsi-qkd-node\">");
+        filter.append("  <qkd_links>");
+        filter.append("    <qkd_link nc:operation=\"delete\">");
+        filter.append("      <qkdl_id>" + key + "</qkdl_id>");
+        filter.append("    </qkd_link>");
+        filter.append("  </qkd_links>");
+        filter.append("</qkd_node>");
+        return filter.toString();
+    }
+
+    private String activateLinkFilter(QkdLink link, OchSignal signal) {
+        StringBuilder filter = new StringBuilder();
+        filter.append("<qkd_node xmlns=\"urn:etsi:qkd:yang:etsi-qkd-node\">");
+        filter.append("  <qkd_links>");
+        filter.append("    <qkd_link>");
+        filter.append("      <qkdl_id>" + link.key + "</qkdl_id>");
+        filter.append("      <qkdl_status " + ETSI_TYPE_PREFIX + ">" + "etsi-qkdn-types:ACTIVE" + "</qkdl_status>");
+        filter.append("      <phys_channel_att>" + String.format("%.2f", link.attenuation) + "</phys_channel_att>");
+        filter.append("      <phys_wavelength>" +  signal.spacingMultiplier() + "</phys_wavelength>");
+        filter.append("    </qkd_link>");
+        filter.append("  </qkd_links>");
+        filter.append("</qkd_node>");
+        return filter.toString();
+    }
+
+    private String deactivateLinkFilter(QkdLink link) {
+        StringBuilder filter = new StringBuilder();
+        filter.append("<qkd_node xmlns=\"urn:etsi:qkd:yang:etsi-qkd-node\">");
+        filter.append("  <qkd_links>");
+        filter.append("    <qkd_link>");
+        filter.append("      <qkdl_id>" + link.key + "</qkdl_id>");
+        //TODO move the status to PASSIVE
+        filter.append("      <qkdl_status " + ETSI_TYPE_PREFIX + ">" + "etsi-qkdn-types:OFF" + "</qkdl_status>");
+        //filter.append("      <phys_channel_att>" + String.format("%.2f", link.attenuation) + "</phys_channel_att>");
+        //filter.append("      <phys_wavelength>" +  signal.spacingMultiplier() + "</phys_wavelength>");
+        filter.append("    </qkd_link>");
+        filter.append("  </qkd_links>");
+        filter.append("</qkd_node>");
+        return filter.toString();
+    }
+
+    private String createLinkFilterSource(QkdLink link) {
         String localNodeId = deviceService.getDevice(link.src.deviceId()).serialNumber();
         String localPortId = link.src.port().toString();
         String remoteNodeId = deviceService.getDevice(link.dst.deviceId()).serialNumber();
@@ -155,8 +325,8 @@ public class QkdLinkManager {
         filter.append("        <qkdi_id>" + remotePortId + "</qkdi_id>");
         filter.append("      </qkdl_remote>");
         filter.append("      <qkdl_type " + ETSI_TYPE_PREFIX + ">" + "etsi-qkdn-types:PHYS" + "</qkdl_type>");
-        filter.append("      <phys_channel_att>" + String.format("%.2f", link.attenuation) + "</phys_channel_att>");
-        filter.append("      <phys_wavelength>" + link.signal.spacingMultiplier() + "</phys_wavelength>");
+        //filter.append("      <phys_channel_att>" + String.format("%.2f", link.attenuation) + "</phys_channel_att>");
+        //filter.append("      <phys_wavelength>" + "1" + "</phys_wavelength>");
         filter.append("      <phys_qkd_role " + ETSI_TYPE_PREFIX + ">" + role + "</phys_qkd_role>");
         filter.append("    </qkd_link>");
         filter.append("  </qkd_links>");
@@ -164,7 +334,7 @@ public class QkdLinkManager {
         return filter.toString();
     }
 
-    private String setLinkFilterDestination(QkdLink link) {
+    private String createLinkFilterDestination(QkdLink link) {
 
         String localNodeId = deviceService.getDevice(link.dst.deviceId()).serialNumber();
         String localPortId = link.dst.port().toString();
@@ -188,8 +358,8 @@ public class QkdLinkManager {
         filter.append("        <qkdi_id>" + remotePortId + "</qkdi_id>");
         filter.append("      </qkdl_remote>");
         filter.append("      <qkdl_type " + ETSI_TYPE_PREFIX + ">" + "etsi-qkdn-types:PHYS" + "</qkdl_type>");
-        filter.append("      <phys_channel_att>" + String.format("%.2f", link.attenuation) + "</phys_channel_att>");
-        filter.append("      <phys_wavelength>" + "1552" + "</phys_wavelength>");
+        //filter.append("      <phys_channel_att>" + String.format("%.2f", link.attenuation) + "</phys_channel_att>");
+        //filter.append("      <phys_wavelength>" + "1" + "</phys_wavelength>");
         filter.append("      <phys_qkd_role " + ETSI_TYPE_PREFIX + ">" + role + "</phys_qkd_role>");
         filter.append("    </qkd_link>");
         filter.append("  </qkd_links>");
@@ -223,6 +393,9 @@ public class QkdLinkManager {
         rpc.append("</get>");
         rpc.append(RPC_CLOSE_TAG);
         return rpc.toString();
+    }
+    public int getDatabaseSize() {
+        return qkdLinkDatabase.size();
     }
 }
 

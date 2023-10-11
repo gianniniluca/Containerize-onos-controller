@@ -1,23 +1,8 @@
-/*
- * Copyright 2023-present Open Networking Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.quantum.app;
+
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.onlab.util.Frequency;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.ConnectPoint;
@@ -34,50 +19,51 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
-import javax.ws.rs.GET;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import static org.onlab.util.Tools.nullIsNotFound;
+import static org.onlab.util.Tools.readTreeFromStream;
 
 /**
- * Quantum Links Management web resource.
+ * Quantum links control APIs.
  */
-@Path("QkdLinks")
+@Path("links")
 public class QkdLinkWebResource extends AbstractWebResource {
-
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     IntentService intentService = get(IntentService.class);
     DeviceService deviceService = get(DeviceService.class);
     CoreService coreService = get(CoreService.class);
-    QkdLinkManager manager = get(QkdLinkManager.class);
+    QkdLinkManager linkManager = get(QkdLinkManager.class);
 
     /**
-     * Get hello world greeting.
+     * Get established QKD links.
      *
      * @return 200 OK
      */
     @GET
-    @Path("")
+    @Path("getLinks")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public Response getQkdLinks() {
 
         ArrayNode links = mapper().createArrayNode();
 
-        for (QkdLink link: manager.getQkdLinks()) {
+        for (QkdLink link: linkManager.getQkdLinks()) {
             ObjectNode node = mapper().createObjectNode()
-                    .put("id", link.id)
                     .put("src", link.src.toString())
                     .put("dst", link.dst.toString())
-                    .put("signal", link.signal.spacingMultiplier())
-                    .put("attenuation", link.attenuation)
                     .put("key", link.key)
+                    .put("status", link.linkStatus.toString())
                     .put("intent-id", link.intent.id().toString());
 
             links.add(node);
@@ -87,36 +73,32 @@ public class QkdLinkWebResource extends AbstractWebResource {
         return ok(root).build();
     }
 
-    @DELETE
-    @Path("")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response deleteQkdLink(@QueryParam("key") String key) {
-
-        QkdLink link = manager.getQkdLink(key);
-
-        //Reset Qkd node configuration
-
-        //Remove optical intent
-        intentService.withdraw(link.intent);
-
-        return Response.ok().build();
-    }
-
     /**
-     * Ask for a new QKD link.
+     * Create a new QKD link with status OFF.
      *
-     * @param srcConnectPoint
-     * @param dstConnectPoint
-     * @return
+     * @return 200 ok
+     * @onos.rsModel linkCreate
      */
     @POST
-    @Path("")
+    @Path("createLink")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response requestQkdLink(@QueryParam("srcConnectPoint") String srcConnectPoint,
-                                   @QueryParam("dstConnectPoint") String dstConnectPoint)
-    throws InterruptedException {
+    public Response createQkdLink(InputStream stream) throws InterruptedException {
+        String srcConnectPoint, dstConnectPoint;
+
+        try {
+            ObjectNode root = readTreeFromStream(mapper(), stream);
+
+            srcConnectPoint = root.get("srcConnectPoint").asText();
+            dstConnectPoint = root.get("dstConnectPoint").asText();
+
+            if ((srcConnectPoint.equals(dstConnectPoint))) {
+                throw new IllegalArgumentException("Source and destination QKD nodes must be different");
+            }
+
+        } catch (IOException ioe) {
+            throw new IllegalArgumentException(ioe);
+        }
 
         ConnectPoint ingress = ConnectPoint.fromString(srcConnectPoint);
         ConnectPoint egress = ConnectPoint.fromString(dstConnectPoint);
@@ -138,38 +120,144 @@ public class QkdLinkWebResource extends AbstractWebResource {
                 signal,
                 suggestedPath);
 
-        intentService.submit(intent);
+        //Configure src and dst QKD
+        QkdLink qkdLink = new QkdLink(
+                ingress,
+                egress,
+                5.0,
+                intent);
+
+        //Check such link already exist
+        if (linkManager.getQkdLink(qkdLink.key) != null) {
+            throw new IllegalArgumentException(
+                    "Such link already exists in status " + linkManager.getQkdLink(qkdLink.key).linkStatus.toString());
+        }
+
+        //Configure link section of nodes
+        linkManager.createQkdLink(qkdLink);
+
+        //Add to local database
+        linkManager.addQkdLink(qkdLink.key, qkdLink);
+
+        log.info("New QkdLink has been created {}", qkdLink.key);
+
+        ObjectNode node = mapper().createObjectNode()
+                .put("link_id", qkdLink.key);
+
+        return Response.ok(node).build();
+    }
+
+    /**
+     * Activate a currently OFF QKD link.
+     *
+     * @param key
+     * @return
+     */
+    @POST
+    @Path("activateLink")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response activateQkdLink(@QueryParam("key") String key)
+            throws InterruptedException {
+
+        QkdLink qkdLink = linkManager.getQkdLink(key);
+
+        if (qkdLink.linkStatus.equals(QkdLink.LinkStatus.ACTIVE)) {
+            throw new IllegalArgumentException("Quantum link is already ACTIVE");
+        }
+
+        intentService.submit(qkdLink.intent);
 
         long startTime = System.currentTimeMillis();
-        while (intentService.getIntentState(intent.key()) != IntentState.INSTALLED) {
-            log.info("Waiting for optical intent installation");
-            Thread.sleep(10);
+        long elapsedTime = 0;
 
+        elapsedTime = System.currentTimeMillis() - startTime;
+        log.info("Waiting for optical intent installation delay {} ms", elapsedTime);
 
+        while (intentService.getIntentState(qkdLink.intent.key()) != IntentState.INSTALLED) {
+            //Thread.sleep(10);
+            elapsedTime = System.currentTimeMillis() - startTime;
+            //log.info("Waiting for optical intent installation delay {} ms", elapsedTime);
 
-
-
-            long elapsedTime = System.currentTimeMillis() - startTime;
             if (elapsedTime > 10000) {
                 break;
             }
         }
 
-        //Configure src and dst QKD
-        QkdLink qkdLink = new QkdLink(
-                getIntentId(intent),
-                ingress,
-                egress,
-                getOchSignal(intent),
-                5.0,
-                intent);
+        log.info("A QkdLink has been activated {}", qkdLink.key);
 
-        log.info("New QkdLink has been created {}", qkdLink);
+        //Uses selected lambda from intent ochsignal
+        linkManager.activateQkdLink(qkdLink.key, getOchSignal(qkdLink.intent));
 
-        manager.addQkdLink(qkdLink.key, qkdLink);
-        manager.configureQkdLinks(qkdLink.key);
+        ObjectNode node = mapper().createObjectNode()
+                .put("activated link_id", qkdLink.key);
 
-        log.info("SOURCE configuration {}: ", manager.getQkdDeviceLinks(qkdLink.key));
+        return Response.ok(node).build();
+    }
+
+    /**
+     * De-activate a currently ACTIVE QKD link.
+     *
+     * @param key
+     * @return
+     */
+    @DELETE
+    @Path("deactivateLink")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deactivateQkdLink(@QueryParam("key") String key)
+            throws InterruptedException {
+
+        QkdLink qkdLink = linkManager.getQkdLink(key);
+
+        if (qkdLink.linkStatus.equals(QkdLink.LinkStatus.OFF)) {
+            throw new IllegalArgumentException("Quantum link is already OFF");
+        }
+
+        if (qkdLink.linkStatus.equals(QkdLink.LinkStatus.PASSIVE)) {
+            throw new IllegalArgumentException("Quantum link is already PASSIVE");
+        }
+
+        //Uses selected lambda from intent ochsignal
+        linkManager.deactivateQkdLink(qkdLink.key);
+
+        //TODO should be status PASSIVE
+        log.info("A QkdLink has been deactivated {} and is now in state OFF", qkdLink.key);
+
+        intentService.withdraw(qkdLink.intent);
+
+        ObjectNode node = mapper().createObjectNode()
+                .put("deactivated link_id", qkdLink.key);
+
+        return Response.ok(node).build();
+    }
+
+    /**
+     * Delete a QKD link.
+     *
+     * @param key
+     * @return 200 OK
+     */
+    @DELETE
+    @Path("deleteLink")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response deleteQkdLink(@QueryParam("key") String key) {
+
+        QkdLink link = linkManager.getQkdLink(key);
+
+        if (link == null) {
+            throw new IllegalArgumentException("Specified qkd link does not exist");
+        }
+
+        //Delete node configuration
+        linkManager.deleteQkdLink(key);
+
+        //Remove from database
+        linkManager.removeQkdLink(key);
+
+        //Remove optical intent
+        intentService.withdraw(link.intent);
 
         return Response.ok().build();
     }
@@ -200,8 +288,7 @@ public class QkdLinkWebResource extends AbstractWebResource {
     }
 
     private int getIntentId(Intent intent) {
-        String string = intent.id().toString().split("x")[1];
 
-        return Integer.valueOf(string);
+        return Integer.decode(intent.id().toString());
     }
 }

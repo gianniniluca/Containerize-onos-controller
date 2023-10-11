@@ -1,29 +1,14 @@
-/*
- * Copyright 2023-present Open Networking Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.quantum.app;
 
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
+
+import org.onosproject.net.DeviceId;
+import org.onosproject.net.device.DeviceService;
+import org.onosproject.netconf.*;
+import org.osgi.service.component.annotations.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Skeletal ONOS application component.
@@ -35,10 +20,20 @@ public class QkdAppManager {
 
     //Used key is the SAE_ID
     private static final Map<String, QkdApp> qkdAppDatabase = new HashMap<>();
+    //Used key is the app_id
+    private static final Map<String, QkdKeySession> keySessionDatabase = new HashMap<>();
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    protected DeviceService deviceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    protected NetconfController netconfController;
+
+    private static final String ETSI_TYPE_PREFIX = "xmlns:etsi-qkdn-types=\"urn:etsi:qkd:yang:etsi-qkd-node-types\"";
 
     @Activate
     protected void activate() {
-        log.info("STARTED QkdLApp Manager appId");
+        log.info("STARTED QkdApp Manager appId");
     }
 
     @Deactivate
@@ -65,4 +60,15 @@ public class QkdAppManager {
     public int getDatabaseSize() {
         return qkdAppDatabase.size();
     }
+
+    public QkdApp getQkdApp(String address, String port) {
+        for (String key: qkdAppDatabase.keySet()) {
+            if ((qkdAppDatabase.get(key).appAddress.equals(address))
+                    && (qkdAppDatabase.get(key).appPort.equals(port))) {
+                return qkdAppDatabase.get(key);
+            }
+        }
+        return null;
+    }
 }
+

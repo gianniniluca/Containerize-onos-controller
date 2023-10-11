@@ -1,100 +1,136 @@
+/*
+ * Copyright 2023-present Open Networking Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.quantum.app;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.onosproject.core.CoreService;
-import org.onosproject.net.device.DeviceService;
+import org.onlab.packet.MacAddress;
+import org.onlab.packet.VlanId;
+import org.onosproject.net.HostId;
+import org.onosproject.net.HostLocation;
+import org.onosproject.net.host.DefaultHostDescription;
+import org.onosproject.net.host.HostDescription;
+import org.onosproject.net.host.HostProviderService;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.rest.AbstractWebResource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.POST;
-import javax.ws.rs.GET;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import java.io.IOException;
+import java.io.InputStream;
+
+import static org.onlab.util.Tools.readTreeFromStream;
+
 /**
- * Quantum Apps Management web resource.
+ * Cryptographic apps APIs.
  */
-@Path("QkdApps")
+@Path("apps")
 public class QkdAppWebResource extends AbstractWebResource {
+    QkdAppManager appManager = get(QkdAppManager.class);
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
-
-    IntentService intentService = get(IntentService.class);
-    DeviceService deviceService = get(DeviceService.class);
-    CoreService coreService = get(CoreService.class);
-    QkdAppManager manager = get(QkdAppManager.class);
+    //HostProviderService hostProvider = get(HostProviderService.class);
 
     /**
-     * Get hello world greeting.
+     * Get list of registered apps.
      *
      * @return 200 OK
      */
     @GET
-    @Path("")
+    @Path("getApps")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response getQkdLinks() {
+    public Response getQkdApps() {
 
-        ArrayNode links = mapper().createArrayNode();
+        ArrayNode apps = mapper().createArrayNode();
 
-        for (QkdApp app : manager.getQkdApps()) {
+        for (QkdApp app : appManager.getQkdApps()) {
             ObjectNode node = mapper().createObjectNode()
+                    .put("app_address", app.appAddress)
+                    .put("app_port", app.appPort)
                     .put("sae_id", app.saeId)
-                    .put("location", app.location.id().toString());
+                    .put("km_location", app.device.id().toString());
 
-            links.add(node);
+            apps.add(node);
         }
 
-        ObjectNode root = this.mapper().createObjectNode().putPOJO("QkdApps", links);
+        ObjectNode root = this.mapper().createObjectNode().putPOJO("QkdApps", apps);
         return ok(root).build();
     }
 
     /**
-     * Explicit app registration.
+     * Register an app.
      *
-     * @param appAddress
-     * @param appLocation
-     * @return
+     * @param stream input json
+     * @return 200 OK
+     * @onos.rsModel appRegistration
      */
     @POST
-    @Path("")
+    @Path("appRegistration")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response implicitRegistration(@QueryParam("appAddress") String appAddress,
-                                   @QueryParam("appLocation") String appLocation) {
+    public Response explicitRegistration(InputStream stream) {
+        QkdApp app;
 
-        return Response.ok()
-                .header("SAE_ID", 22)
-                .build();
+        try {
+            ObjectNode root = readTreeFromStream(mapper(), stream);
+
+            app = new QkdApp(
+                    root.get("appAddress").asText(),
+                    root.get("appPort").asText(),
+                    root.get("kmAddress").asText(),
+                    root.get("kmPort").asText());
+
+        } catch (IOException ioe) {
+            throw new IllegalArgumentException(ioe);
+        }
+
+        //TODO post a host to the gui
+        /*HostDescription hostDescription = new DefaultHostDescription(
+                MacAddress.NONE,
+                VlanId.NONE,
+                new HostLocation(app.connectPoint,1234));
+
+        hostProvider.hostDetected(HostId.hostId(app.appAddress),hostDescription,true);*/
+
+        ObjectNode node = mapper().createObjectNode()
+                .put("sae_id", app.saeId);
+
+        return Response.ok(node).build();
     }
 
     /**
-     * Open Key Session.
-     * Implicit app registration.
+     * Unregister an app.
      *
-     * @param appAddress
-     * @param appLocation
-     * @return
+     * @param key
+     * @return 200 OK
      */
-    @POST
-    @Path("")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response openKeySession(@QueryParam("appAddress") String appAddress,
-                                   @QueryParam("appLocation") String appLocation) {
+    @DELETE
+    @Path("appDelete")
+    public Response deleteApp(@QueryParam("key") String key) {
 
-        return Response.ok()
-                .header("SAE_ID", 22)
-                .header("APP_ID", 44)
-                .build();
+        appManager.removeQkdApp(key);
+
+        return Response.ok().build();
     }
 }
-

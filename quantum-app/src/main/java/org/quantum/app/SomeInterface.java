@@ -13,22 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.quantum.app;
 
-import org.onlab.rest.AbstractWebApplication;
+public interface SomeInterface {
 
-import java.util.Set;
+    void someMethod();
 
-/**
- * Sample REST API web application.
- */
-public class AppWebApplication extends AbstractWebApplication {
-    @Override
-    public Set<Class<?>> getClasses() {
-        return getClasses(
-                QkdAppWebResource.class,
-                QkdLinkWebResource.class,
-                QkdKeySessionWebResource.class);
-    }
 }
