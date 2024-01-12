@@ -103,6 +103,14 @@ public class QkdLinkWebResource extends AbstractWebResource {
         ConnectPoint ingress = ConnectPoint.fromString(srcConnectPoint);
         ConnectPoint egress = ConnectPoint.fromString(dstConnectPoint);
 
+        if (deviceService.getDevice(ingress.deviceId()) == null) {
+            throw new IllegalArgumentException("Source node does not exist");
+        }
+
+        if (deviceService.getDevice(egress.deviceId()) == null) {
+            throw new IllegalArgumentException("Destination node does not exist");
+        }
+
         Key key = null;
         ApplicationId appId = nullIsNotFound(coreService.getAppId("org.quantum.app"), "App ID not found");
         boolean bidirectional = false;
@@ -161,6 +169,10 @@ public class QkdLinkWebResource extends AbstractWebResource {
             throws InterruptedException {
 
         QkdLink qkdLink = linkManager.getQkdLink(key);
+
+        if (qkdLink == null) {
+            throw new IllegalArgumentException("Quantum link does not exist");
+        }
 
         if (qkdLink.linkStatus.equals(QkdLink.LinkStatus.ACTIVE)) {
             throw new IllegalArgumentException("Quantum link is already ACTIVE");

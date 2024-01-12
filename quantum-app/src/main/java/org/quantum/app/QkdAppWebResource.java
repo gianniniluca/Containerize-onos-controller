@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
+import org.onlab.util.ItemNotFoundException;
 import org.onosproject.net.HostId;
 import org.onosproject.net.HostLocation;
 import org.onosproject.net.host.DefaultHostDescription;
@@ -128,6 +129,10 @@ public class QkdAppWebResource extends AbstractWebResource {
     @DELETE
     @Path("appDelete")
     public Response deleteApp(@QueryParam("key") String key) {
+
+        if (appManager.getQkdApp(key) == null) {
+            throw new ItemNotFoundException("Application is not registered");
+        }
 
         appManager.removeQkdApp(key);
 
