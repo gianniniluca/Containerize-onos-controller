@@ -13,6 +13,8 @@ public class QkdKeySession {
 
     QkdKeySessionManager sessionManager = get(QkdKeySessionManager.class);
 
+    QkdLinkManager linkManager = get(QkdLinkManager.class);
+
     //These parameters are loaded from REST
     protected QkdApp appMaster;
     protected QkdApp appSlave;
@@ -35,9 +37,17 @@ public class QkdKeySession {
             throw new ItemNotFoundException("Key session is already known");
         }
 
-        String source = master.device.serialNumber().split("-")[3];
-        String destination = slave.device.serialNumber().split("-")[3];
+        //Find a qkd link suitable for this session
+        QkdLink qkdLink = linkManager.getQkdLink(master.qkdNode, slave.qkdNode);
 
-        linkId = "bbbbbbbb-" + source + "-bbbb-" + destination + "-bbbbbbbbbbbb";
+        if (qkdLink == null) {
+            throw new ItemNotFoundException("A link for this session does not exist");
+        }
+
+        linkId = qkdLink.key;
+
+        //String source = master.device.serialNumber().split("-")[3];
+        //String destination = slave.device.serialNumber().split("-")[3];
+        //linkId = "bbbbbbbb-" + source + "-bbbb-" + destination + "-bbbbbbbbbbbb";
     }
 }

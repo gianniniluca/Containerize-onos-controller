@@ -17,15 +17,7 @@ package org.quantum.app;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.onlab.packet.MacAddress;
-import org.onlab.packet.VlanId;
 import org.onlab.util.ItemNotFoundException;
-import org.onosproject.net.HostId;
-import org.onosproject.net.HostLocation;
-import org.onosproject.net.host.DefaultHostDescription;
-import org.onosproject.net.host.HostDescription;
-import org.onosproject.net.host.HostProviderService;
-import org.onosproject.net.intent.IntentService;
 import org.onosproject.rest.AbstractWebResource;
 
 import javax.ws.rs.Path;
@@ -44,7 +36,7 @@ import java.io.InputStream;
 import static org.onlab.util.Tools.readTreeFromStream;
 
 /**
- * Cryptographic apps APIs.
+ * Cryptographic apps control APIs.
  */
 @Path("apps")
 public class QkdAppWebResource extends AbstractWebResource {
@@ -77,6 +69,35 @@ public class QkdAppWebResource extends AbstractWebResource {
 
         ObjectNode root = this.mapper().createObjectNode().putPOJO("QkdApps", apps);
         return ok(root).build();
+    }
+
+    /**
+     * Get details on a registered app.
+     *
+     * @param  key sae_id of the app
+     * @return 200 OK
+     */
+    @GET
+    @Path("getApp")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response getKeyManager(@QueryParam("key") String key) {
+        ObjectNode response = mapper().createObjectNode();
+
+        if (appManager.getQkdApp(key) == null) {
+            throw new IllegalArgumentException("Specified app does not exist");
+        }
+
+        QkdApp app = appManager.getQkdApp(key);
+
+        response.put("app_address", app.appAddress)
+                .put("app_port", app.appPort)
+                .put("sae_id", app.saeId)
+                .put("km_address", app.qkdNode.kmAddress)
+                .put("km_port", app.qkdNode.kmPort)
+                .put("km_id", app.qkdNode.kmId);
+
+        return ok(response).build();
     }
 
     /**
@@ -123,7 +144,7 @@ public class QkdAppWebResource extends AbstractWebResource {
     /**
      * Unregister an app.
      *
-     * @param key
+     * @param key sae_id of the app
      * @return 200 OK
      */
     @DELETE

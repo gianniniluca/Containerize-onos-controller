@@ -158,7 +158,7 @@ public class QkdLinkWebResource extends AbstractWebResource {
     /**
      * Activate a currently OFF QKD link.
      *
-     * @param key
+     * @param key link_id of the quantum channel
      * @return
      */
     @POST
@@ -210,7 +210,7 @@ public class QkdLinkWebResource extends AbstractWebResource {
     /**
      * De-activate a currently ACTIVE QKD link.
      *
-     * @param key
+     * @param key link_id of the quantum channel
      * @return
      */
     @DELETE
@@ -247,7 +247,7 @@ public class QkdLinkWebResource extends AbstractWebResource {
     /**
      * Delete a QKD link.
      *
-     * @param key
+     * @param key link_id of the quantum channel
      * @return 200 OK
      */
     @DELETE
@@ -270,6 +270,40 @@ public class QkdLinkWebResource extends AbstractWebResource {
 
         //Remove optical intent
         intentService.withdraw(link.intent);
+
+        return Response.ok().build();
+    }
+
+    /**
+     * Set the link status.
+     *
+     * @param @param key app_id of the session
+     * @param status enum from ETSI 015
+     * @return 200 OK
+     */
+    @POST
+    @Path("setKeySessionStatus")
+    public Response setSessionStatus(@QueryParam("key") String key,
+                                     @QueryParam("status") String status) {
+
+        QkdLink link = linkManager.getQkdLink(key);
+
+        switch (status) {
+            case "OFF":
+                link.linkStatus = QkdLink.LinkStatus.OFF;
+                break;
+            case "PASSIVE":
+                link.linkStatus = QkdLink.LinkStatus.PASSIVE;
+                break;
+            case "ACTIVE":
+                link.linkStatus = QkdLink.LinkStatus.ACTIVE;
+                break;
+            case "PENDING":
+                link.linkStatus = QkdLink.LinkStatus.PENDING;
+                break;
+            default:
+                throw new IllegalArgumentException("Status not valid, allowed OFF/PASSIVE/ACTIVE/PENDING");
+        }
 
         return Response.ok().build();
     }

@@ -38,7 +38,7 @@ public class QkdAppManager {
 
     @Deactivate
     protected void deactivate() {
-        log.info("STOPPED QkdLApp Manager appId");
+        log.info("STOPPED QkdApp Manager appId");
     }
 
     public void addQkdApp(String key, QkdApp value) {

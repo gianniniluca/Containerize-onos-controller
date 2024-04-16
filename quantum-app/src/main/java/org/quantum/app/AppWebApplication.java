@@ -29,6 +29,7 @@ public class AppWebApplication extends AbstractWebApplication {
         return getClasses(
                 QkdAppWebResource.class,
                 QkdLinkWebResource.class,
-                QkdKeySessionWebResource.class);
+                QkdKeySessionWebResource.class,
+                QkdNodeWebResource.class);
     }
 }

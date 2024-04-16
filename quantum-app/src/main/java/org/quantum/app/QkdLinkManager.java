@@ -71,6 +71,18 @@ public class QkdLinkManager {
         return qkdLinkDatabase.get(key);
     }
 
+    public QkdLink getQkdLink(QkdNode endPoint1, QkdNode endPoint2) {
+        for (QkdLink qkdLink : getQkdLinks()) {
+            if ((qkdLink.src.deviceId().equals(endPoint1.qkdNodeId)) && (qkdLink.dst.deviceId().equals(endPoint2.qkdNodeId))) {
+                return qkdLink;
+            }
+            if ((qkdLink.src.deviceId().equals(endPoint2.qkdNodeId)) && (qkdLink.dst.deviceId().equals(endPoint1.qkdNodeId))) {
+                return qkdLink;
+            }
+        }
+        return null;
+    }
+
     public Collection<QkdLink> getQkdLinks() {
         return qkdLinkDatabase.values();
     }
