@@ -1,6 +1,7 @@
 package org.quantum.app;
 
 import org.onosproject.core.ApplicationId;
+import org.onosproject.net.DeviceId;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -16,7 +17,8 @@ public class QkdNodeManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private ApplicationId appId;
-    private static final Map<String, QkdNode> qkdNodeDatabase = new HashMap<>();
+
+     private static final Map<DeviceId, QkdNode> qkdNodeDatabase = new HashMap<>();
 
     @Activate
     protected void activate() {
@@ -28,20 +30,37 @@ public class QkdNodeManager {
         log.info("STOPPED QkdNode Manager appId");
     }
 
-    public void addQkdNode(String key, QkdNode value) {
-        qkdNodeDatabase.put(key, value);
+    public void addQkdNode(DeviceId deviceId, QkdNode value) {
+        qkdNodeDatabase.put(deviceId, value);
     }
 
-    public void removeQkdNode(String key) {
-        qkdNodeDatabase.remove(key);
+    public void removeQkdNode(DeviceId deviceId) {
+        qkdNodeDatabase.remove(deviceId);
     }
 
-    public QkdNode getQkdNode(String key) {
-        return qkdNodeDatabase.get(key);
+    public QkdNode getQkdNode(DeviceId deviceId) {
+        return qkdNodeDatabase.get(deviceId);
     }
 
     public Collection<QkdNode> getQkdNodes() {
         return qkdNodeDatabase.values();
+    }
+
+    public boolean isQkdNode(DeviceId deviceId) {
+        for (QkdNode node : qkdNodeDatabase.values()) {
+            if (deviceId.equals(node.qkdNodeId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public String getKeyManagerId(DeviceId deviceId) {
+        return getQkdNode(deviceId).kmId;
+    }
+
+    public String getKeyManagerAddressPort(DeviceId deviceId) {
+        return getQkdNode(deviceId).kmAddress + ":" + getQkdNode(deviceId).kmPort;
     }
 
     public int getDatabaseSize() {

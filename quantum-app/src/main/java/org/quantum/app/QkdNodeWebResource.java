@@ -76,7 +76,7 @@ public class QkdNodeWebResource extends AbstractWebResource {
             throw new ItemNotFoundException("Specified device is of wrong type.");
         }
 
-        if (nodeManager.getQkdNode(device.id().toString()) != null) {
+        if (nodeManager.getQkdNode(device.id()) != null) {
             throw new ItemNotFoundException("Specified device is already registered.");
         }
 

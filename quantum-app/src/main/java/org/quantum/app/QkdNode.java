@@ -33,7 +33,7 @@ public class QkdNode {
         kmId = etsi015Serial;
 
         //Add the app to the local database
-        manager.addQkdNode(qkdNodeId.toString(), this);
+        manager.addQkdNode(qkdNodeId, this);
 
         log.info("A new QkdNode added {} with key manager id", device.id(), kmId);
     }

@@ -51,8 +51,11 @@ public class QkdLinkManager {
     protected void deactivate() {
 
         for (QkdLink link : getQkdLinks()) {
-            if (intentService.getIntentState(link.intent.key()) == IntentState.INSTALLED) {
-                intentService.withdraw(link.intent);
+            //Only DIRECT LINKS have an associated intent
+            if (link.linkType == QkdLink.LinkType.DIRECT) {
+                if (intentService.getIntentState(link.intent.get().key()) == IntentState.INSTALLED) {
+                    intentService.withdraw(link.intent.get());
+                }
             }
         }
 
@@ -68,6 +71,7 @@ public class QkdLinkManager {
     }
 
     public QkdLink getQkdLink(String key) {
+        log.info("Looking for link {}", key);
         return qkdLinkDatabase.get(key);
     }
 
@@ -108,7 +112,7 @@ public class QkdLinkManager {
     }
 
 
-    public boolean createQkdLink(QkdLink link) {
+    public boolean createQkdDirectLink(QkdLink link) {
 
         NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
 
@@ -142,9 +146,22 @@ public class QkdLinkManager {
         return true;
     }
 
-    public boolean activateQkdLink(String key, OchSignal signal) {
+    public boolean createQkdVirtualLink(QkdLink link) {
+
+       //TODO to be implemented including NETCONF communication toward devices
+
+        //Confirm the link status
+        link.linkStatus = QkdLink.LinkStatus.OFF;
+
+        return true;
+    }
+
+    public boolean activateQkdDirectLink(String key, OchSignal signal) {
         QkdLink link = getQkdLink(key);
 
+        if (link.linkType != QkdLink.LinkType.DIRECT) {
+            throw new IllegalArgumentException("Link must be of type DIRECT");
+        }
         NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
 
         try {
@@ -170,6 +187,62 @@ public class QkdLinkManager {
             log.error("deleteQkdLinks - Failed configuring destination QKD node {}", link.src.deviceId());
             throw new IllegalStateException(new NetconfException("Failed configuring destination QKD node.", e));
         }
+
+        //Change the link status
+        link.linkStatus = QkdLink.LinkStatus.ACTIVE;
+
+        return true;
+    }
+
+    public boolean activateQkdVirtualLink(String key) {
+        QkdLink link = getQkdLink(key);
+
+        if (link.linkType != QkdLink.LinkType.VIRTUAL) {
+            throw new IllegalArgumentException("Link must be of type VIRTUAL");
+        }
+
+        //Check all used links are DIRECT and in status ACTIVE
+        for (QkdLink physLink : link.directLinks) {
+            if (physLink.linkType != QkdLink.LinkType.DIRECT) {
+                throw new IllegalArgumentException("All links used by a VIRTUAL link must be of type DIRECT");
+            }
+
+            if (physLink.linkStatus != QkdLink.LinkStatus.ACTIVE) {
+                throw new IllegalArgumentException("All links used by a VIRTUAL link must be ACTIVE");
+            }
+        }
+
+        /*
+        TODO: cofigure source node
+        NetconfSession sessionSrc = getNetconfSession(link.src.deviceId());
+
+        try {
+            log.info("REQUEST sent to src QKD node: {}", activateLinkFilter(link, signal));
+            boolean replySrc = sessionSrc.editConfig(DatastoreId.RUNNING, null, activateLinkFilter(link, signal));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replySrc);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring source QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring source QKD node.", e));
+        }*/
+
+        //TODO: cofigure intermediate nodes
+
+        /*
+        TODO: cofigure destination node
+        NetconfSession sessionDst = getNetconfSession(link.dst.deviceId());
+
+        try {
+            log.info("REQUEST sent to dst QKD node: {}", activateLinkFilter(link, signal));
+            boolean replyDst = sessionDst.editConfig(DatastoreId.RUNNING, null, activateLinkFilter(link, signal));
+
+            log.info("REPLY to DeviceConfiguration src: {}", replyDst);
+
+        } catch (Exception e) {
+            log.error("deleteQkdLinks - Failed configuring destination QKD node {}", link.src.deviceId());
+            throw new IllegalStateException(new NetconfException("Failed configuring destination QKD node.", e));
+        }*/
 
         //Change the link status
         link.linkStatus = QkdLink.LinkStatus.ACTIVE;

@@ -67,7 +67,7 @@ public class QkdApp {
             throw new ItemNotFoundException("Specified device is unknown");
         }
 
-        qkdNode = nodeManager.getQkdNode(deviceId.toString());
+        qkdNode = nodeManager.getQkdNode(deviceId);
         if (qkdNode == null) {
             throw new ItemNotFoundException("Specified device is not a QKD node");
         }
