@@ -160,3 +160,14 @@ At this point, you have successfully:
 - Deployed and interacted with ONOS via GUI and CLI
 - Connected ETSI containers using a custom bridge network
 - Verified communication between containers using ICMP
+
+## NETCONF Comunication
+The purpose of the test is to establish a NETCONF communication between ONOS and the emulated QKD nodes. At the end you can visualize the nodes opening Menu-> Topology
+
+You have to exec this command inside the bash of ONOS.
+To use ONOS's bash:
+```bash
+sudo docker exec -it onos /bin/bash/
+```
+Then, you can run `./init-network.sh`.
+The init-network.sh script is the first to be executed and is responsible for launching all the other secondary scripts involved in the network configuration.
