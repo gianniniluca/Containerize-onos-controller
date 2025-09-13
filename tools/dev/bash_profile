@@ -11,8 +11,8 @@ ONOS_ROOT=$(pushd $ONOS_ROOT >/dev/null && pwd -P && popd >/dev/null)
 
 # Rely on developer preference for automatically ignited apps
 # Default to drivers and gui2
-export ONOS_APPS=drivers,openflow,gui2,netcfglinksprovider,drivers.odtn-driver,optical-rest
-
+#export ONOS_APPS=drivers,openflow,gui2,netcfglinksprovider,drivers.odtn-driver,optical-rest
+export ONOS_APPS=drivers,gui2,netcfglinksprovider,drivers.odtn-driver,drivers.quantum,optical-rest,roadm 
 export MAVEN=${MAVEN:-~/Applications/apache-maven-3.3.9}
 
 # Clean up Karaf environment variables to avoid issues when switching from ONOS 1.x to 2.x

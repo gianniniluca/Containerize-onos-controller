@@ -16,6 +16,7 @@
   --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+	
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-dependencies</artifactId>
@@ -31,7 +32,7 @@
     <url>http://onosproject.org</url>
 
     <properties>
-        <onos.app.name>org.quantum.app</onos.app.name>
+	<onos.app.name>org.quantum.app</onos.app.name>
         <api.version>1.0.0</api.version>
         <api.description>QKD apps REST API</api.description>
         <onos.app.title>QKD App</onos.app.title>
@@ -41,7 +42,7 @@
         <onos.app.url>http://onosproject.org</onos.app.url>
         <api.title>QKD apps REST API</api.title>
         <onos.app.readme>ONOS OSGi bundle archetype.</onos.app.readme>
-        <web.context>/onos/quantum-app</web.context>
+        <web.context>/onos/quantum-app</web.context> 
     </properties>
 
     <dependencies>
@@ -162,10 +163,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <configuration>
-                    <skip>true</skip>
-                </configuration>
+		    <skip>true</skip>
+		 </configuration>
             </plugin>
-
             <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -179,7 +179,8 @@
           </instructions>
         </configuration>
       </plugin>
-        </plugins>
+      
+    </plugins>
     </build>
 
 </project>

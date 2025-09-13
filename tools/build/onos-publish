@@ -16,4 +16,4 @@ shift $OPC
 REPO_URL=$1
 CATALOG=/tmp/onos.$$.catalog
 
-onos-publish-catalog $options $CATALOG && onos-upload-artifacts.py $CATALOG $REPO_URL
+$(dirname "$0")/onos-publish-catalog $options $CATALOG && $(dirname "$0")/onos-upload-artifacts.py $CATALOG $REPO_URL
