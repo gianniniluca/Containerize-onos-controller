@@ -1,158 +1,162 @@
-# ONOS : Open Network Operating System
+# Containerize onos controller
+The objective of this repository is to containerize the ONOS controller within a Docker environment using a recent Linux distribution, and to demonstrate its functionality through simple applications
+All the source code is taken from the original repository:
+
+- [onos-quancom - By Prof. Alessio Giorgetti](https://github.com/alessiocnit/onos-quancom)
 
 
-## What is ONOS?
-ONOS is the only SDN controller platform that supports the transition from
-legacy “brown field” networks to SDN “green field” networks. This enables
-exciting new capabilities, and disruptive deployment and operational cost points
-for network operators.
+## Author
 
-## Top-Level Features
+- Luca Giannini
+- Bachelor's Student of Computer Engineering
+- University of Pisa, Italy
 
-* High availability through clustering and distributed state management.
-* Scalability through clustering and sharding of network device control.
-* Performance that is good for a first release, and which has an architecture
-  that will continue to support improvements.
-* Northbound abstractions for a global network view, network graph, and
-  application intents.
-* Pluggable southbound for support of OpenFlow, P4Runtime, and new or legacy
-  protocols.
-* Graphical user interface to view multi-layer topologies and inspect elements
-  of the topology.
-* REST API for access to Northbound abstractions as well as CLI commands.
-* CLI for debugging.
-* Support for both proactive and reactive flow setup.
-* SDN-IP application to support interworking with traditional IP networks
-  controlled by distributed routing protocols such as BGP.
-* IP-Optical use case demonstration.
+## Initial Challenge
+In recent years, we’ve often heard about quantum computing and quantum physics. This technology could potentially compromise current systems based on classical cryptography.
+
+For this reason, we introduce Quantum Key Distribution (QKD) – a technology capable of distributing cryptographic keys with theoretically unbreakable security.
+
+Although QKD systems already exist, there are challenges when integrating them with today's optical networks. To address this, we introduce Software Defined Networking (SDN), which separates the control plane from the data plane, enabling better flexibility and control.
+
+This work, developed as a bachelor’s thesis, has the following goals:
+- Containerize the ONOS controller using Docker
+- Test some of the controller's functionalities 
 
 
-## Getting started
+## Tested Environment
 
-### Dependencies
+This project was tested on a Lenovo IdeaPad 3, running a virtual machine with the following OS: Ubuntu 64-BIT 24.04.2 LTS
 
-The following packages are required:
+## Starting the Process
 
-* git
-* zip
-* curl
-* unzip
-* python3 (needed by Bazel)
-
-### Build ONOS from source
-
-ONOS is built with [Bazel](https://bazel.build/), an open-source build tool
-developed by Google. We suggest downloading and installing Bazel using the
-[official instructions](https://docs.bazel.build/versions/master/install.html).
-
-The minimum required Bazel version is 1.0.0
-
-1. Clone the code from the ONOS Gerrit repository
-```bash
-$ git clone https://gerrit.onosproject.org/onos
-```
-
-2. Optionally, you can add the ONOS developer environment to your bash profile.
-   This will provide access to a number of handy commands to run, test and debug
-   ONOS. No need to do this step again if you had done this before:
-```bash
-$ cd onos
-$ cat << EOF >> ~/.bash_profile
-export ONOS_ROOT="`pwd`"
-source $ONOS_ROOT/tools/dev/bash_profile
-EOF
-$ . ~/.bash_profile
-```
-
-3. Build ONOS with Bazel
-```bash
-$ cd $ONOS_ROOT
-$ bazel build onos
-```
-
-### Start ONOS on local machine
-
-To run ONOS locally on the development machine, simply run the following command:
+First you have to clone this repo.
 
 ```bash
-$ bazel run onos-local [-- [clean] [debug]]
+git clone https://github.com/gianniniluca/Containerize-onos-controller
 ```
 
-Or simpler one, if you have added the ONOS developer environment to your bash
-profile:
+
+### Download Docker Engine
+If you have already installed Docker you can skip this point and skip to the next one.
+
+To build Docker images and run containers, you must install Docker. Start by installing the required packages:.
+
+First step is to install necessary packets:
+```bash
+sudo apt update
+sudo apt install \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+```
+Then, you can follow these commands:
+```bash
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] \
+https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
+
+```
+Verify the Docker installation:
+```bash
+docker --version
+```
+If you see a Docker version, you're ready to proceed..
+
+## Start with building the images
+In order to build the ONOS image you have to make these two steps:
+```bash
+cd onos-quancom
+sudo docker build -t onos-quancom .
+```
+This may take up to 30 minutes depending on your system..
+At the end, if you don't receive warnigs you get an image to run.
+
+ 
+
+## Next step is to create network bridge
+This command creates a custom bridge network to allow communication between your containers.
+```bash
+sudo docker network create --driver bridge --subnet 172.25.0.0/16 etsi-net
+```
+
+## Starting the ONOS container
+
+Running this commad you create a container with inside ONOS. During the process you can see the logs it helps you to discover potienl error. You have to wait until also the quantum-app have been installed.
 
 ```bash
-$ ok [clean] [debug]
+sudo docker run -it --rm --network etsi-net --ip 172.25.0.10  -p 6653:6653   -p 6640:6640   -p 8181:8181   -p 8101:8101   -p 9876:9876 --name onos  onos-quancom
+```
+## Intecart with ONOS Web GUI
+
+`ONOS GUI is running inside docker: 172.25.0.10:8181` and `ONOS CLI on 8101`. 
+
+The ONOS Web GUI is available at:
+http://localhost:8181/onos/ui/login.html
+
+`Credentials to login:`
+
+- username: karaf
+- password: karaf
+
+
+Once logged in, go to Menu → Applications to verify which applications are active.
+
+
+
+
+## Interact with ONOS CLI
+
+Open a terminal and run:
+```bash
+ssh -p 8101 karaf@localhost
+# password is: karaf
 ```
 
-The above command will create a local installation from the ONOS tarbal
-(re-building if necessary) and will start the ONOS server in the background. In
-the foreground, it will display a continuous view of the ONOS (Apache Karaf) log
-file. Options following the double-dash (–) are passed through to the ONOS
-Apache Karaf and can be omitted. Here, the `clean` option forces a clean
-installation, removing any state from previous executions. The `debug` option
-means that the default debug port 5005 will be available for attaching a remote
-debugger.
+This will take you to the `ONOS-CLI`. Here is the example:
 
-### Interacting with ONOS
 
-To access ONOS UI, use a browser to open:
 
-[http://localhost:8181/onos/ui](http://localhost:8181/onos/ui)
 
-Or simpler, use the `onos-gui localhost` command.
+## Test newtowrk bridge
 
-The default username and password is `onos`/`rocks`.
-
-To attach to the ONOS CLI console, run:
+You must load the pre-built ETSI test container image:
 
 ```bash
-$ onos localhost
+docker load < emulator-etsi-test.tar
 ```
-
-### Unit Tests
-
-To run ONOS unit tests, including code Checkstyle validation, run the following
-command:
+Check everything go well with this command, you should see emulator-etsi-test image.
 
 ```bash
-$ bazel query 'tests(//...)' | xargs bazel test
+sudo docker images
 ```
+## Starting etsi image
 
-Or better yet, to run code Checkstyle and all unit tests use the following
-convenience alias:
-
+You have to run this image but adding IP addres in order to connect to th network bridge.
 ```bash
-$ ot
+sudo docker run -it --rm --network etsi-net --ip 172.25.0.101 --name etsi1 emulator-etsi-test:1.0
 ```
 
-## Contributing
+You can launch multiple containers by changing the name and IP address accordingly.
 
-ONOS code is hosted and maintained using [Gerrit](https://gerrit.onosproject.org/).
+## Testing enviromnent
+Use the ping command to test communication between ONOS and the ETSI containers
+```bash
+sudo docker exec onos ping -c 3 172.25.0.101
+sudo docker exec etsi1 ping -c 3 172.25.0.10
+sudo docker exec etsi1 ping -c 3 172.25.0.102
+```
 
-Code on GitHub is only a mirror. The ONOS project does **NOT** accept code
-through pull requests on GitHub.
+At this point, you have successfully:
 
-To contribute to ONOS, please refer to [Sample Gerrit
-Workflow](https://wiki.onosproject.org/display/ONOS/Sample+Gerrit+Workflow). It
-should include most of the things you'll need to get your contribution started!
-
-## More information
-
-For more information, please check out our wiki page or mailing lists:
-
-* [Wiki](https://wiki.onosproject.org/)
-* [Google group](https://groups.google.com/a/onosproject.org/forum/#!forum/onos-dev)
-* [Slack](https://onosproject.slack.com)
-
-## License
-
-ONOS (Open Network Operating System) is published under [Apache License
-2.0](https://github.com/opennetworkinglab/onos/blob/master/LICENSE.txt)
-
-## Acknowledgements
-YourKit supports open source projects with innovative and intelligent tools
-for monitoring and profiling Java and .NET applications.
-YourKit is the creator of [YourKit Java Profiler](https://www.yourkit.com/java/profiler/), [YourKit .NET Profiler](https://www.yourkit.com/.net/profiler/) and [YourKit YouMonitor](https://www.yourkit.com/youmonitor/).
-
-![YourKit](https://www.yourkit.com/images/yklogo.png)
+- Containerized ONOS using Docker
+- Deployed and interacted with ONOS via GUI and CLI
+- Connected ETSI containers using a custom bridge network
+- Verified communication between containers using ICMP
