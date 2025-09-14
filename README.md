@@ -109,7 +109,7 @@ http://localhost:8181/onos/ui/login.html
 
 Once logged in, go to Menu → Applications to verify which applications are active.
 
-
+![ping](/images/gui.png)
 
 
 ## Interact with ONOS CLI
