@@ -153,7 +153,8 @@ sudo docker exec onos ping -c 3 172.25.0.101
 sudo docker exec etsi1 ping -c 3 172.25.0.10
 sudo docker exec etsi1 ping -c 3 172.25.0.102
 ```
-
+![ping1](/images/ping1.png)
+![ping](/images/ping.png)
 At this point, you have successfully:
 
 - Containerized ONOS using Docker
@@ -171,3 +172,4 @@ sudo docker exec -it onos /bin/bash/
 ```
 Then, you can run `./init-network.sh`.
 The init-network.sh script is the first to be executed and is responsible for launching all the other secondary scripts involved in the network configuration.
+![topology](/images/topology.png)
