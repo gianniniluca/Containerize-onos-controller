@@ -122,7 +122,7 @@ ssh -p 8101 karaf@localhost
 
 This will take you to the `ONOS-CLI`. Here is the example:
 
-
+![cli](/images/cli.png)
 
 
 ## Test newtowrk bridge
