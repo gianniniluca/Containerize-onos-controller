@@ -1,5 +1,5 @@
 # Containerize onos controller
-The objective of this repository is to containerize the ONOS controller within a Docker environment using a recent Linux distribution, and to demonstrate its functionality through simple applications
+The objective of this repository is to containerize the ONOS controller within a Docker environment using a recent Linux distribution, and to demonstrate its functionality through simple applications.
 All the source code is taken from the original repository:
 
 - [onos-quancom - By Prof. Alessio Giorgetti](https://github.com/alessiocnit/onos-quancom)
@@ -37,11 +37,10 @@ git clone https://github.com/gianniniluca/Containerize-onos-controller
 
 
 ### Download Docker Engine
-If you have already installed Docker you can skip this point and skip to the next one.
+If you have already installed Docker you can skip to the next one.
 
-To build Docker images and run containers, you must install Docker. Start by installing the required packages:.
-
-First step is to install necessary packets:
+To build Docker images and run containers, you must install Docker. 
+Start by installing the required packages:
 ```bash
 sudo apt update
 sudo apt install \
@@ -50,6 +49,7 @@ sudo apt install \
     gnupg \
     lsb-release
 ```
+
 Then, you can follow these commands:
 ```bash
 sudo mkdir -p /etc/apt/keyrings
@@ -62,13 +62,14 @@ sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin -y
-
 ```
+
 Verify the Docker installation:
 ```bash
 docker --version
 ```
 If you see a Docker version, you're ready to proceed..
+
 
 ## Start with building the images
 In order to build the ONOS image you have to make these two steps:
@@ -87,8 +88,8 @@ This command creates a custom bridge network to allow communication between your
 sudo docker network create --driver bridge --subnet 172.25.0.0/16 etsi-net
 ```
 
-## Starting the ONOS container
 
+## Starting the ONOS container
 Running this commad you create a container with inside ONOS. During the process you can see the logs it helps you to discover potienl error. You have to wait until also the quantum-app have been installed.
 
 ```bash
@@ -137,7 +138,7 @@ Check everything go well with this command, you should see emulator-etsi-test im
 ```bash
 sudo docker images
 ```
-## Starting etsi image
+## Starting etsi container
 
 You have to run this image but adding IP addres in order to connect to th network bridge.
 ```bash
